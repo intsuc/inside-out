@@ -9,17 +9,17 @@ abbrev M := Except Error
 mutual
 
 partial def checkOutsideIn (Γ : Ctx) : Exp → Typ → M Typ
-  | exp let x₁ ∷ t₂ ≔ e₃; e₄, t => do
+  | Exp.let x₁ t₂ e₃ e₄, t => do
     let t₃ ← checkOutsideIn Γ e₃ t₂
     checkOutsideIn ((x₁, t₃) :: Γ) e₄ t
 
-  | exp e@(exp abs x₁ ⇒ e₂), typ ? ⇒ t₂ => do
+  | e@(Exp.abs x₁ e₂), typ ? ⇒ t₂ => do
     let (t₂, Γ) ← checkInsideOut Γ e₂ t₂
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => typ t₁ ⇒ t₂
     | none         => throw $ Error.partialInferenceFailure e s!"? ⇒ {t₂}"
 
-  | exp abs x₁ ⇒ e₂, typ t₁ ⇒ t₂ => do
+  | Exp.abs x₁ e₂, typ t₁ ⇒ t₂ => do
     let t₂ ← checkOutsideIn ((x₁, t₁) :: Γ) e₂ t₂
     typ t₁ ⇒ t₂
 
@@ -35,22 +35,22 @@ partial def checkOutsideIn (Γ : Ctx) : Exp → Typ → M Typ
     if expected == found then found else throw $ Error.typeMismatch s!"{expected}" s!"{found}"
 
 partial def inferOutsideIn (Γ : Ctx) : App → Exp → M Typ
-  | Ψ, exp let x₁ ∷ t₂ ≔ e₃; e₄ => do
+  | Ψ, Exp.let x₁ t₂ e₃ e₄ => do
     let t₃ ← checkOutsideIn Γ e₃ t₂
     inferOutsideIn ((x₁, t₃) :: Γ) Ψ e₄
 
-  | _, e@(exp #x₁) =>
+  | _, Exp.var x₁ =>
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => t₁
     | none         => throw $ Error.unknownVariable x₁
 
-  | [], e@(exp abs x₁ ⇒ e₂) => do
+  | [], e@(Exp.abs x₁ e₂) => do
     let (t₂, Γ) ← inferInsideOut Γ e₂
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => typ t₁ ⇒ t₂
     | none         => throw $ Error.partialInferenceFailure e s!"? ⇒ {t₂}"
 
-  | t₁ :: Ψ, e@(exp abs x₁ ⇒ e₂) => do
+  | t₁ :: Ψ, Exp.abs x₁ e₂ => do
     let t₂ ← inferOutsideIn ((x₁, t₁) :: Γ) Ψ e₂
     typ t₁ ⇒ t₂
 
@@ -75,13 +75,13 @@ partial def inferOutsideIn (Γ : Ctx) : App → Exp → M Typ
   | _, e => throw $ Error.inferenceFailure e
 
 partial def checkInsideOut (Γ : Ctx) : Exp → Typ → M (Typ × Ctx)
-  | exp let x₁ ∷ t₂ ≔ e₃; e₄, t => do
+  | Exp.let x₁ t₂ e₃ e₄, t => do
     let (t₃, Γ) ← checkInsideOut Γ e₃ t₂
     checkInsideOut ((x₁, t₃) :: Γ) e₄ t
 
-  | exp #x₁, t => (t, (x₁, t) :: Γ)
+  | Exp.var x₁, t => (t, (x₁, t) :: Γ)
 
-  | exp abs x₁ ⇒ e₂, typ t₁ ⇒ t₂ => do
+  | Exp.abs x₁ e₂, typ t₁ ⇒ t₂ => do
     let (t₂, Γ) ← checkInsideOut ((x₁, t₁) :: Γ) e₂ t₂
     (typ t₁ ⇒ t₂, Γ)
 
@@ -97,16 +97,16 @@ partial def checkInsideOut (Γ : Ctx) : Exp → Typ → M (Typ × Ctx)
     if expected == found then (found, Γ) else throw $ Error.typeMismatch s!"{expected}" s!"{found}"
 
 partial def inferInsideOut (Γ : Ctx) : Exp → M (Typ × Ctx)
-  | exp let x₁ ∷ t₂ ≔ e₃; e₄ => do
+  | Exp.let x₁ t₂ e₃ e₄ => do
     let (t₃, Γ) ← checkInsideOut Γ e₃ t₂
     inferInsideOut ((x₁, t₃) :: Γ) e₄
 
-  | e@(exp #x₁) =>
+  | e@(Exp.var x₁) =>
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => (t₁, Γ)
     | none         => throw $ Error.inferenceFailure e
 
-  | e@(exp abs x₁ ⇒ e₂) => do
+  | e@(Exp.abs x₁ e₂) => do
     let (t₂, Γ) ← inferInsideOut Γ e₂
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => (typ t₁ ⇒ t₂, Γ)

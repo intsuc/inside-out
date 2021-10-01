@@ -24,16 +24,16 @@ syntax "?"           : typ
 syntax "( " typ " )" : typ
 syntax term          : typ
 
-syntax "let " term " ∷ " typ " ≔ " exp " ; " exp : exp
-syntax:100 "# " term:100                         : exp
-syntax "abs " term " ⇒ " exp                     : exp
-syntax:65 exp:65 " ◁ " exp:66                    : exp
-syntax "ff"                                      : exp
-syntax "tt"                                      : exp
-syntax "iff " exp " then " exp " else " exp      : exp
-syntax exp " ∷ " typ                             : exp
-syntax "( " exp " )"                             : exp
-syntax term                                      : exp
+syntax "let " ident " ∷ " typ " ≔ " exp " ; " exp : exp
+syntax:100 "# " ident                             : exp
+syntax "abs " ident " ⇒ " exp                     : exp
+syntax:65 exp:65 " ◁ " exp:66                     : exp
+syntax "ff"                                       : exp
+syntax "tt"                                       : exp
+syntax "iff " exp " then " exp " else " exp       : exp
+syntax exp " ∷ " typ                              : exp
+syntax "( " exp " )"                              : exp
+syntax term                                       : exp
 
 macro_rules
   | `(typ| $t₁ ⇒ $t₂) => `(Typ.func $t₁ $t₂)
@@ -42,10 +42,10 @@ macro_rules
   | `(typ| ($t:typ))  => `(typ| $t)
   | `(typ| $t:term)   => t
 
-macro_rules
-  | `(exp| let $x₁ ∷ $t₂ ≔ $e₃; $e₄)  => `(Exp.let $x₁ $t₂ $e₃ $e₄)
-  | `(exp| #$x₁)                      => `(Exp.var $x₁)
-  | `(exp| abs $x₁ ⇒ $e₂)             => `(Exp.abs $x₁ $e₂)
+open Lean Parser in macro_rules
+  | `(exp| let $x₁ ∷ $t₂ ≔ $e₃; $e₄)  => `(Exp.let $(quote x₁.getId.toString) $t₂ $e₃ $e₄)
+  | `(exp| #$x₁)                      => `(Exp.var $(quote x₁.getId.toString))
+  | `(exp| abs $x₁ ⇒ $e₂)             => `(Exp.abs $(quote x₁.getId.toString) $e₂)
   | `(exp| $e₁ ◁ $e₂)                 => `(Exp.app $e₁ $e₂)
   | `(exp| ff)                        => `(Exp.ff)
   | `(exp| tt)                        => `(Exp.tt)
@@ -72,9 +72,9 @@ instance : ToString Typ where
 instance : ToString Exp where
   toString :=
     let rec go (p : Nat) : Exp → String
-      | exp let x₁ ∷ t₂ ≔ e₃; e₄   => paren p 0 s!"let {x₁} ∷ {t₂} ≔ {go 0 e₃}; {go 0 e₄}"
-      | exp #x₁                    => s!"#{x₁}"
-      | exp abs x₁ ⇒ e₂            => paren p 0 s!"abs {x₁} ⇒ {go 0 e₂}"
+      | exp Exp.let x₁ t₂ e₃ e₄    => paren p 0 s!"let {x₁} ∷ {t₂} ≔ {go 0 e₃}; {go 0 e₄}"
+      | exp Exp.var x₁             => s!"#{x₁}"
+      | exp Exp.abs x₁ e₂          => paren p 0 s!"abs {x₁} ⇒ {go 0 e₂}"
       | exp e₁ ◁ e₂                => paren p 2 s!"{go 2 e₁} ◁ {go 3 e₂}"
       | exp ff                     => "ff"
       | exp tt                     => "tt"
