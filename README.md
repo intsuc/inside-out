@@ -5,7 +5,7 @@ An algorithm of inside-out bidirectional typing, where types can flow from insid
 ## Features
 
 - Simply typed lambda calculus
-- No unification on typing
+- No unification when typing
 - Bidirectional typing[^1]
 - Application mode[^2]
 - Partial type-checking with holes
