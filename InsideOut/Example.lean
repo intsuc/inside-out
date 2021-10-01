@@ -36,6 +36,10 @@ notation Γ " | " Ψ " ⊢ " e => inferOutsideIn Γ Ψ e
   let "f" ∷ bool ⇒ bool ⇒ bool ≔ abs "x" ⇒ abs "y" ⇒ #"x";
   (abs "x" ⇒ abs "y" ⇒ #"f") ◁ ff ◁ ff
 
+#eval [] | [] ⊢ exp
+  let "f" ∷ bool ⇒ bool ⇒ bool ≔ abs "x" ⇒ abs "y" ⇒ #"x";
+  (abs "x" ⇒ abs "y" ⇒ #"f" ◁ #"y") ◁ ff
+
 #eval IO.println "-- error"
 
 #eval [] | [] ⊢ exp #"x"
