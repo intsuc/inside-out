@@ -1,7 +1,7 @@
 inductive Typ where
   | func : Typ → Typ → Typ
   | bool : Typ
-  deriving BEq
+  deriving Inhabited, BEq
 
 inductive Exp where
   | «let» : String → Typ → Exp → Exp → Exp

@@ -1,9 +1,10 @@
 import InsideOut.Syntax
+import InsideOut.Error
 
 abbrev Ctx := List (String × Typ)
 abbrev App := List Typ
 
-abbrev M := Except String
+abbrev M := Except Error
 
 mutual
 
@@ -22,7 +23,7 @@ partial def checkOutsideIn (Γ : Ctx) : Exp → Typ → M Unit
 
   | e, expected => do
     let found ← inferOutsideIn Γ [] e
-    if expected == found then () else throw s!"type expected '{expected}'; found '{found}'"
+    if expected == found then () else throw $ Error.typeMismatch s!"{expected}" s!"{found}"
 
 partial def inferOutsideIn (Γ : Ctx) : App → Exp → M Typ
   | Ψ, exp let x₁ ∷ t₂ ≔ e₃; e₄ => do
@@ -32,13 +33,13 @@ partial def inferOutsideIn (Γ : Ctx) : App → Exp → M Typ
   | _, e@(exp #x₁) =>
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => t₁
-    | none         => throw s!"unknown variable '{e}'"
+    | none         => throw $ Error.unknownVariable x₁
 
   | [], e@(exp abs x₁ ⇒ e₂) => do
     let (t₂, Γ) ← inferInsideOut Γ e₂
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => typ t₁ ⇒ t₂
-    | none         => throw s!"partially failed to infer '{e} ∷ ? ⇒ {t₂}'"
+    | none         => throw $ Error.partialInferenceFailure e s!"? ⇒ {t₂}"
 
   | t₁ :: Ψ, e@(exp abs x₁ ⇒ e₂) => do
     let t₂ ← inferOutsideIn ((x₁, t₁) :: Γ) Ψ e₂
@@ -49,7 +50,7 @@ partial def inferOutsideIn (Γ : Ctx) : App → Exp → M Typ
     let t₁ ← inferOutsideIn Γ (t₂ :: Ψ) e₁
     match t₁ with
     | typ _ ⇒ t₁₂ => t₁₂
-    | found       => throw s!"type expected '_ ⇒ _'; found '{found}'"
+    | found       => throw $ Error.typeMismatch "_ ⇒ _" s!"{found}"
 
   | [], exp ff => typ bool
 
@@ -65,7 +66,7 @@ partial def inferOutsideIn (Γ : Ctx) : App → Exp → M Typ
     checkOutsideIn Γ e₁ t₂
     t₂
 
-  | _, e => throw s!"failed to infer '{e}'"
+  | _, e => throw $ Error.inferenceFailure e
 
 partial def checkInsideOut (Γ : Ctx) : Exp → Typ → M Ctx
   | exp let x₁ ∷ t₂ ≔ e₃; e₄, t => do
@@ -84,7 +85,7 @@ partial def checkInsideOut (Γ : Ctx) : Exp → Typ → M Ctx
 
   | e, expected => do
     let (found, Γ) ← inferInsideOut Γ e
-    if expected == found then Γ else throw s!"type expected '{expected}'; found '{found}'"
+    if expected == found then Γ else throw $ Error.typeMismatch s!"{expected}" s!"{found}"
 
 partial def inferInsideOut (Γ : Ctx) : Exp → M (Typ × Ctx)
   | exp let x₁ ∷ t₂ ≔ e₃; e₄ => do
@@ -94,13 +95,13 @@ partial def inferInsideOut (Γ : Ctx) : Exp → M (Typ × Ctx)
   | e@(exp #x₁) =>
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => (t₁, Γ)
-    | none         => throw s!"failed to infer '{e}'"
+    | none         => throw $ Error.inferenceFailure e
 
   | e@(exp abs x₁ ⇒ e₂) => do
     let (t₂, Γ) ← inferInsideOut Γ e₂
     match Γ.find? (·.1 == x₁) with
     | some (_, t₁) => (typ t₁ ⇒ t₂, Γ)
-    | none         => throw s!"partially failed to infer '{e} ∷ ? ⇒ {t₂}'"
+    | none         => throw $ Error.partialInferenceFailure e s!"? ⇒ {t₂}"
 
   | exp e₁ ◁ e₂ => do
     let (t₁, Γ) ← inferInsideOut Γ e₁
@@ -108,7 +109,7 @@ partial def inferInsideOut (Γ : Ctx) : Exp → M (Typ × Ctx)
     | typ t₁₁ ⇒ t₁₂ =>
       let Γ ← checkInsideOut Γ e₂ t₁₁
       (t₁₂, Γ)
-    | found => throw s!"type expected '_ ⇒ _'; found '{found}'"
+    | found => throw $ Error.typeMismatch "_ ⇒ _" s!"{found}"
 
   | exp ff => (typ bool, Γ)
 

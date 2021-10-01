@@ -38,6 +38,10 @@ notation Γ " | " Ψ " ⊢ " e => inferOutsideIn Γ Ψ e
 
 #eval IO.println "-- error"
 
+#eval [] | [] ⊢ exp #"x"
+
+#eval [] | [] ⊢ exp iff abs "x" ⇒ #"x" then ff else ff
+
 #eval [] | [] ⊢ exp abs "x" ⇒ #"x"
 
 #eval [] | [] ⊢ exp abs "x" ⇒ ff
