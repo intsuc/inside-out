@@ -40,6 +40,12 @@ notation Γ " | " Ψ " ⊢ " e => inferOutsideIn Γ Ψ e
   let "f" ∷ bool ⇒ bool ⇒ bool ≔ abs "x" ⇒ abs "y" ⇒ #"x";
   (abs "x" ⇒ abs "y" ⇒ #"f" ◁ #"y") ◁ ff
 
+#eval [] | [] ⊢ exp (abs "x" ⇒ ff) ∷ bool ⇒ ?
+
+#eval [] | [] ⊢ exp (abs "x" ⇒ #"x") ∷ bool ⇒ ?
+
+#eval [] | [] ⊢ exp (abs "x" ⇒ #"x") ∷ ? ⇒ bool
+
 #eval IO.println "-- error"
 
 #eval [] | [] ⊢ exp #"x"
@@ -57,3 +63,5 @@ notation Γ " | " Ψ " ⊢ " e => inferOutsideIn Γ Ψ e
 #eval [] | [] ⊢ exp
   let "f" ∷ bool ⇒ bool ⇒ bool ≔ abs "x" ⇒ abs "y" ⇒ #"x";
   abs "x" ⇒ abs "y" ⇒ #"f" ◁ #"x" ◁ #"x"
+
+#eval [] | [] ⊢ exp (abs "x" ⇒ #"x") ∷ ? ⇒ ? -- TODO: should be error

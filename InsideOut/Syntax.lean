@@ -1,6 +1,7 @@
 inductive Typ where
   | func : Typ → Typ → Typ
   | bool : Typ
+  | hole : Typ
   deriving Inhabited, BEq
 
 inductive Exp where
@@ -19,6 +20,7 @@ declare_syntax_cat exp
 
 syntax typ " ⇒ " typ : typ
 syntax "bool"        : typ
+syntax "?"           : typ
 syntax "( " typ " )" : typ
 syntax term          : typ
 
@@ -36,6 +38,7 @@ syntax term                                      : exp
 macro_rules
   | `(typ| $t₁ ⇒ $t₂) => `(Typ.func $t₁ $t₂)
   | `(typ| bool)      => `(Typ.bool)
+  | `(typ| ?)         => `(Typ.hole)
   | `(typ| ($t:typ))  => `(typ| $t)
   | `(typ| $t:term)   => t
 
@@ -63,6 +66,7 @@ instance : ToString Typ where
     let rec go (p : Nat) : Typ → String
       | typ t₁ ⇒ t₂ => paren p 0 s!"{go 1 t₁} ⇒ {go 0 t₂}"
       | typ bool    => "bool"
+      | typ ?       => "?"
     go 0
 
 instance : ToString Exp where
